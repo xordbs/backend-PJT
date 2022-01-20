@@ -13,7 +13,7 @@
 
   <update id = "AUTH.UPDATE.USERPWUPDATE">
       update user_t set
-      user_pw = #{pw}
+      user_pw = #{new_pw}
       where user_id = #{id}
   </update>
 
@@ -74,5 +74,18 @@
     WHERE user_nickName = #{user_nickName}
   </select>
 
+  <select id="AUTH.SELECT.userexist">
+    /*로그인: 존재하는 회원인지 검사*/
+    SELECT  
+        user_id,
+        user_pw,
+        user_name,
+        user_nickName,
+        user_email,
+        user_code
+    FROM user_T
+    WHERE user_id = #{id}
+    LIMIT 1
+  </select>
 
 </mapper>

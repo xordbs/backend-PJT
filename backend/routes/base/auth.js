@@ -1,22 +1,32 @@
 var express = require("express");
-var {hashPassword,comparePassword} = require("../../utils/bcrypt");
-const jwt = require('jsonwebtoken');
+var { hashPassword, comparePassword } = require("../../utils/bcrypt");
+const jwt = require("jsonwebtoken");
 const envJson = require(`${__dirname}/../../env/env.json`);
-const {verifyToken} = require('../../utils/jwt');
+const { verifyToken } = require("../../utils/jwt");
+
+// DB 연동
+const path = require("path");
+const mybatisMapper = require("mybatis-mapper");
+const version = process.env.VERSION ? process.env.VERSION : "base";
+const sqlPath = path.join(__dirname, "..", ".", `../sql/${version}/`);
+
+// mapper 설정
+mybatisMapper.createMapper([`${sqlPath}/base.xml`]);
+
 var app = express.Router();
 
-// // 회원정보 조회
-app.get("/myInfo", async (req, res) => {
-  if (!req.body || !req.body.id) {
+// 회원정보 조회
+app.get("/myInfo/:id", async (req, res) => {
+  if (!req.params || !req.params.id) {
     res.status(403).send({ msg: "잘못된 파라미터입니다." });
     return;
   }
 
   var selectParams = {
-    id: req.body.id,
+    id: req.params.id,
   };
 
-  var selectQuery = req.mybatisMapper.getStatement(
+  var selectQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.SELECT.userInfo",
     selectParams,
@@ -38,7 +48,7 @@ app.get("/myInfo", async (req, res) => {
     res.status(403).send({ msg: "정보가 없습니다." });
     return;
   }
-  
+
   res.json({
     msg: "RDB에서 정보 꺼내오기",
     user: data.map((x) => {
@@ -49,7 +59,6 @@ app.get("/myInfo", async (req, res) => {
 
 // 회원가입 (add 01.19 OYT )
 app.post("/regi", async (req, res) => {
-
   const hashedPassword = await hashPassword(req.body.user_pw);
 
   var insertParams = {
@@ -60,8 +69,8 @@ app.post("/regi", async (req, res) => {
     email: req.body.user_email,
     code: req.body.user_code,
   };
-  
-  let insertQuery = req.mybatisMapper.getStatement(
+
+  let insertQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.INSERT.userRegi",
     insertParams,
@@ -75,7 +84,9 @@ app.post("/regi", async (req, res) => {
     });
     console.log("TCL: data", data);
   } catch (error) {
-    res.status(403).send({ msg: "user insert에 실패하였습니다.", error: error });
+    res
+      .status(403)
+      .send({ msg: "user insert에 실패하였습니다.", error: error });
     return;
   }
 
@@ -87,14 +98,14 @@ app.post("/regi", async (req, res) => {
 }); // 회원가입 end
 
 // ID 중복검사 (add 01.19 OYT)
-app.get('/checkid', async (req, res) => {
-    var selectParams = {
-      user_id: req.body.id,
-    };
+app.get("/checkid/:id", async (req, res) => {
+  var selectParams = {
+    user_id: req.params.id,
+  };
 
-  console.log(req.body.id);
+  console.log(req.params.id);
 
-  let idChkQuery = req.mybatisMapper.getStatement(
+  let idChkQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.SELECT.userIdChk",
     selectParams,
@@ -107,89 +118,95 @@ app.get('/checkid', async (req, res) => {
       type: req.sequelize.QueryTypes.SELECT,
     });
     console.log("TCL: data", data);
-
   } catch (error) {
-    res.status(403).send({ msg: "아이디 중복검사에 실패하였습니다.", error: error });
+    res
+      .status(403)
+      .send({ msg: "아이디 중복검사에 실패하였습니다.", error: error });
     return;
   }
   let checkid = new Object();
-  checkid.tf =false;   
+  checkid.tf = false;
   if (data.length == 0) {
-    checkid.tf = true
-  }else{
-    checkid.tf = false
+    checkid.tf = true;
+  } else {
+    checkid.tf = false;
   }
-  res.json({
+  return res.json({
     msg: "id 중복검사",
-    idchk: checkid.tf
+    code: 200,
+    idchk: checkid.tf,
   });
 }); // ID 중복검사 end
 
 // nickname 중복검사 (add 01.19 OYT)
-app.get('/checknick', async (req, res) => {
+app.get("/checknick/:nickName", async (req, res) => {
   var selectParams = {
-    user_nickName: req.body.user_nickName,
+    user_nickName: req.params.nickName,
   };
 
-console.log(req.body.user_nickName);
+  console.log(req.params.nickName);
 
-let nickChkQuery = req.mybatisMapper.getStatement(
-  "USER",
-  "AUTH.SELECT.userNickChk",
-  selectParams,
-  { language: "sql", indent: "  " }
-);
+  let nickChkQuery = mybatisMapper.getStatement(
+    "USER",
+    "AUTH.SELECT.userNickChk",
+    selectParams,
+    { language: "sql", indent: "  " }
+  );
 
-let data = [];
-try {
-  data = await req.sequelize.query(nickChkQuery, {
-    type: req.sequelize.QueryTypes.SELECT,
+  let data = [];
+  try {
+    data = await req.sequelize.query(nickChkQuery, {
+      type: req.sequelize.QueryTypes.SELECT,
+    });
+    console.log("TCL: data", data);
+  } catch (error) {
+    res
+      .status(403)
+      .send({ msg: "닉네임 중복검사에 실패하였습니다.", error: error });
+    return;
+  }
+  let checkNick = new Object();
+  checkNick.tf = false;
+  if (data.length == 0) {
+    checkNick.tf = true;
+  } else {
+    checkNick.tf = false;
+  }
+  return res.json({
+    msg: "닉네임 중복검사",
+    code: 200,
+    nickchk: checkNick.tf,
   });
-  console.log("TCL: data", data);
-
-} catch (error) {
-  res.status(403).send({ msg: "닉네임 중복검사에 실패하였습니다.", error: error });
-  return;
-}
-let checkNick = new Object();
-checkNick.tf =false;   
-if (data.length == 0) {
-  checkNick.tf = true
-}else{
-  checkNick.tf = false
-}
-res.json({
-  msg: "닉네임 중복검사",
-  nickchk: checkNick.tf
-});
 }); // 닉네임 중복검사 end
 
 // 회원 정보 수정(add 01.19 CSW)
-app.patch("/updateinfo",verifyToken, async (req, res) => {
+app.patch("/updateinfo", verifyToken, async (req, res) => {
   if (!req.body || !req.body.user_id) {
     res.status(403).send({ msg: "잘못된 파라미터입니다." });
     return;
   }
   var updateParams = {
     id: req.body.user_id,
-    nickName: req.body.user_nickName
+    nickName: req.body.user_nickName,
   };
 
-  var updateQuery = req.mybatisMapper.getStatement(
+  var updateQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.UPDATE.USERUPDATE",
     updateParams,
-        { language: "sql", indent: "  " }
+    { language: "sql", indent: "  " }
   );
 
   let data = [];
   try {
-      data = await req.sequelize.query(updateQuery, {
+    data = await req.sequelize.query(updateQuery, {
       type: req.sequelize.QueryTypes.UPDATE,
     });
     console.log("TCL: data", data);
   } catch (error) {
-    res.status(403).send({ msg: "nick name update에 실패하였습니다.", error: error });
+    res
+      .status(403)
+      .send({ msg: "nick name update에 실패하였습니다.", error: error });
     return;
   }
 
@@ -197,42 +214,41 @@ app.patch("/updateinfo",verifyToken, async (req, res) => {
     res.status(403).send({ msg: "정보가 없습니다." });
     return;
   }
-  res.json({ success: "nickname update success"});
-
+  res.json({ success: "nickname update success" });
 });
 // 회원 정보 수정 end
 
 // 회원탈퇴 add (01.19 csw)
-app.delete("/delete", async(req, res)=>{
-  if (!req.body || !req.body.user_id) {
+app.delete("/delete/:id", async (req, res) => {
+  if (!req.params || !req.params.id) {
     res.status(403).send({ msg: "잘못된 파라미터입니다." });
     return;
   }
   var deleteParams = {
-    id: req.body.user_id
-  };
+    id: req.params.id,
+  };2
 
-  var deleteQuery = req.mybatisMapper.getStatement(
-    "BASE",
+  var deleteQuery = mybatisMapper.getStatement(
+    "USER",
     "AUTH.DELETE.USERDELETE",
-     deleteParams,
-     { language: "sql", indent: "  " }
+    deleteParams,
+    { language: "sql", indent: "  " }
   );
 
   let data = [];
   try {
     data = await req.sequelize.query(deleteQuery, {
-      type: req.sequelize.QueryTypes.DELETE
+      type: req.sequelize.QueryTypes.DELETE,
     });
     console.log("user-delete success");
   } catch (error) {
     res.status(403).send({ msg: "delete에 실패하였습니다.", error: error });
     return;
   }
+  return res.json({ success: "nickname update success" });
 }); // 회원탈퇴 end
-    
 
-// 비밀번호 수정(add 01.19 CSW)
+// 비밀번호 수정(fix 01.21 OYT)
 app.patch("/updatepw", verifyToken, async (req, res) => {
   if (!req.body || !req.body.user_id) {
     res.status(403).send({ msg: "잘못된 파라미터입니다." });
@@ -247,8 +263,8 @@ app.patch("/updatepw", verifyToken, async (req, res) => {
   var selectParams = {
     id: req.body.user_id,
   };
-  
-  let selectQuery = req.mybatisMapper.getStatement(
+
+  let selectQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.SELECT.userexist",
     selectParams,
@@ -261,33 +277,28 @@ app.patch("/updatepw", verifyToken, async (req, res) => {
       type: req.sequelize.QueryTypes.SELECT,
     });
     console.log("TCL: data", data);
-
   } catch (error) {
     res.status(403).send({ msg: "존재하지 않는 유저입니다.", error: error });
     return;
   }
   //존재하는 유저인지 확인 end
-
+  const hashedPassword = await hashPassword(req.body.user_new_pw);
   var updateParams = {
     id: req.body.user_id,
     pw: req.body.user_pw,
-    new_pw: req.body.user_new_pw
+    new_pw: hashedPassword,
   };
 
-  const result = await comparePassword(
-    updateParams.pw,
-    data[0].user_pw
-  );
+  const result = await comparePassword(updateParams.pw, data[0].user_pw);
 
-
-  if(result){
-    var updateQuery = req.mybatisMapper.getStatement(
+  if (result) {
+    var updateQuery = mybatisMapper.getStatement(
       "USER",
       "AUTH.UPDATE.USERPWUPDATE",
       updateParams,
       { language: "sql", indent: "  " }
     );
-  
+
     let data = [];
     try {
       data = await req.sequelize.query(updateQuery, {
@@ -295,21 +306,20 @@ app.patch("/updatepw", verifyToken, async (req, res) => {
       });
       console.log("TCL: data", data);
     } catch (error) {
-      res.status(403).send({ msg: "pw update에 실패하였습니다.", error: error });
+      res
+        .status(403)
+        .send({ msg: "pw update에 실패하였습니다.", error: error });
       return;
     }
-  
+
     if (data.length == 0) {
       res.status(403).send({ msg: "정보가 없습니다." });
       return;
     }
-    res.json({ success: "pw update success"});
-  
-  }else{
-    res.json({error:"pw 일치하지 않음"})
+    res.json({ success: "pw update success" });
+  } else {
+    res.json({ error: "pw 일치하지 않음" });
   }
-
- 
 });
 // 비밀번호 수정 end
 
@@ -324,8 +334,8 @@ app.post("/login", async (req, res) => {
   var selectParams = {
     id: req.body.user_id,
   };
-  
-  let selectQuery = req.mybatisMapper.getStatement(
+
+  let selectQuery = mybatisMapper.getStatement(
     "USER",
     "AUTH.SELECT.userexist",
     selectParams,
@@ -338,38 +348,44 @@ app.post("/login", async (req, res) => {
       type: req.sequelize.QueryTypes.SELECT,
     });
     console.log("TCL: data", data);
-
   } catch (error) {
-    res.status(403).send({ msg: "로그인 중 문제가 발생했습니다.", error: error });
+    res
+      .status(403)
+      .send({ msg: "로그인 중 문제가 발생했습니다.", error: error });
     return;
   }
   //존재하는 유저인지 확인 end
   if (data.length == 0) {
-    return res.status(200).json({ code:200, msg: "로그인 정보를 확인하세요" });
-  }else{
+    return res.status(200).json({ code: 200, msg: "로그인 정보를 확인하세요" });
+  } else {
     //비밀번호 비교
     const result = await comparePassword(req.body.user_pw, data[0].user_pw);
 
     if (result) {
-      const token = jwt.sign({
-        id:data[0].user_id
-      },envJson.JWT_SECRET,{expiresIn: "24h"});
-      console.log(token);
-      return res.status(200).json(
-        { code: 200,
-          msg: "로그인 성공",
-          token:token,
+      const token = jwt.sign(
+        {
           id: data[0].user_id,
-          name: data[0].user_nickName});
+        },
+        envJson.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+      console.log(token);
+      return res.status(200).json({
+        code: 200,
+        msg: "로그인 성공",
+        token: token,
+        id: data[0].user_id,
+        name: data[0].user_nickName,
+      });
     } else {
-      return res.status(200).json({ code:200, msg: "로그인 정보를 확인하세요" });
+      return res
+        .status(200)
+        .json({ code: 200, msg: "로그인 정보를 확인하세요" });
     }
   }
-
 });
-  
-  //비밀번호 비교 end
-// 회원 로그인 end
 
+//비밀번호 비교 end
+// 회원 로그인 end
 
 module.exports = app;

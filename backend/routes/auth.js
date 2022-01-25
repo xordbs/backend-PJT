@@ -1,14 +1,14 @@
 var express = require("express");
-var { hashPassword, comparePassword } = require("../../utils/bcrypt");
+var { hashPassword, comparePassword } = require("../utils/bcrypt");
 const jwt = require("jsonwebtoken");
-const envJson = require(`${__dirname}/../../env/env.json`);
-const { verifyToken } = require("../../utils/jwt");
+const envJson = require(`${__dirname}/../env/env.json`);
+const { verifyToken } = require("../utils/jwt");
 
 // DB 연동
 const path = require("path");
 const mybatisMapper = require("mybatis-mapper");
-const version = process.env.VERSION ? process.env.VERSION : "base";
-const sqlPath = path.join(__dirname, "..", ".", `../sql/${version}/`);
+// const version = process.env.VERSION ? process.env.VERSION : "base";
+const sqlPath = path.join(__dirname, "..", ".", `/sql/`);
 
 // mapper 설정
 mybatisMapper.createMapper([`${sqlPath}/base.xml`]);
@@ -226,7 +226,7 @@ app.delete("/delete/:id", async (req, res) => {
   }
   var deleteParams = {
     id: req.params.id,
-  };2
+  };
 
   var deleteQuery = mybatisMapper.getStatement(
     "USER",
@@ -245,7 +245,7 @@ app.delete("/delete/:id", async (req, res) => {
     res.status(403).send({ msg: "delete에 실패하였습니다.", error: error });
     return;
   }
-  return res.json({ success: "nickname update success" });
+  res.json({ success: "delete success" });
 }); // 회원탈퇴 end
 
 // 비밀번호 수정(fix 01.21 OYT)
@@ -373,14 +373,16 @@ app.post("/login", async (req, res) => {
       return res.status(200).json({
         code: 200,
         msg: "로그인 성공",
-        token: token,
+        status: "login",
+        token,
         id: data[0].user_id,
         name: data[0].user_nickName,
+        type: data[0].user_code,
       });
     } else {
       return res
         .status(200)
-        .json({ code: 200, msg: "로그인 정보를 확인하세요" });
+        .json({ code: 200, status: "fail", msg: "로그인 정보를 확인하세요" });
     }
   }
 });

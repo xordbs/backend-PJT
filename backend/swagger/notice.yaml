@@ -12,8 +12,8 @@ info:
 host: "petstore.swagger.io"
 basePath: "/v2"
 tags:
-  - name: "community"
-    description: "Operations about user"
+  - name: "notice"
+    description: "Operations about notice"
     externalDocs:
       description: "Find out more about our store"
       url: "http://swagger.io"
@@ -21,189 +21,13 @@ schemes:
   - "https"
   - "http"
 paths:
-  /community/regi:
-    post:
-      tags:
-        - "community"
-      summary: "Create"
-      description: "글 작성."
-      operationId: "Create content"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "Created user object"
-          required: true
-          schema:
-            $ref: "#/definitions/community"
-      responses:
-        default:
-          description: "successful operation"
-  /community/list:
-    get:
-      tags:
-        - "community"
-      summary: "list"
-      description: "글 목록 보기"
-      operationId: "community list"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "community_code"
-          in: "query"
-          description: "커뮤니티 코드"
-          required: false
-          type: "string"
-        - name: "keyword"
-          in: "query"
-          description: "검색어"
-          required: false
-          type: "string"
-        - name: "page_no"
-          in: "query"
-          description: "page Number"
-          required: true
-          type: "integer"
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/update:
-    put:
-      tags:
-        - "community"
-      summary: "update community"
-      description: "글 정보 업데이트"
-      operationId: "update content"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "update object"
-          required: true
-          schema:
-            $ref: "#/definitions/community_update"
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/detail/{community_no}:
-    get:
-      tags:
-        - "community"
-      summary: "view detail"
-      description: "선택된 글 상세보기"
-      operationId: "view Detail"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: path
-          name: "community_no"
-          description: "view object"
-          required: true
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/delete/{community_no}:
+  /notice/delete/{no}:
     delete:
       tags:
-        - "community"
-      summary: "delete"
-      description: "선택된 글 삭제"
-      operationId: "delete"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: path
-          name: "community_no"
-          description: "view object"
-          required: true
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/listcount:
-    get:
-      tags:
-        - "community"
-      summary: "listcount"
-      description: "글 목록 개수 보기"
-      operationId: "community list count"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "community_code"
-          in: "query"
-          description: "community list count"
-          required: false
-          type: "string"
-        - name: "keyword"
-          in: "query"
-          description: "검색어"
-          required: false
-          type: "string"
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/comment/write:
-    post:
-      tags:
-        - "community_comment"
-      summary: "write community_comment"
-      description: "write community_comment"
-      operationId: "write community_comment"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "write community_comment"
-          required: true
-          schema:
-            $ref: "#/definitions/community_comment_write"
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/comment/update:
-    put:
-      tags:
-        - "community_comment"
-      summary: "Update community_comment"
-      description: "Update community_comment"
-      operationId: "Update community_comment"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "Update community_comment"
-          required: true
-          schema:
-            $ref: "#/definitions/community_comment_update"
-      responses:
-        default:
-          description: "successful operation"
-
-  /community/comment/delete/{no}:
-    delete:
-      tags:
-        - "community_comment"
-      summary: "Delete by community_comment"
+        - "notice"
+      summary: "Delete by notice_no"
       description: "For valid response try integer IDs with positive integer value.         Negative or non-integer values will generate API errors"
-      operationId: "delete community_comment"
+      operationId: "deletenotice"
       produces:
         - "application/xml"
         - "application/json"
@@ -217,20 +41,201 @@ paths:
         default:
           description: "successful operation"
 
-  /community/comment/list:
+  /notice/detail/{no}:
     get:
       tags:
-        - "community_comment"
-      summary: "list"
-      description: "댓글 목록 보기"
-      operationId: "community comment list"
+        - "notice"
+      summary: "get notice detail"
+      description: "get notice detail"
+      operationId: "notice detail no"
       produces:
         - "application/xml"
         - "application/json"
       parameters:
-        - name: "community_no"
+        - in: path
+          name: "no"
+          description: "detail no"
+          required: true
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/list:
+    get:
+      tags:
+        - "notice"
+      summary: "list"
+      description: "글 목록 보기"
+      operationId: "notice list"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - name: "notice_code"
           in: "query"
-          description: "community comment list"
+          description: "notice list"
+          required: false
+          type: "string"
+
+        - name: "keyword"
+          in: "query"
+          description: "검색어"
+          required: false
+          type: "string"
+
+        - name: "page_no"
+          in: "query"
+          description: "페이지 수"
+          required: true
+          type: "integer"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/listcount:
+    get:
+      tags:
+        - "notice"
+      summary: "listcount"
+      description: "글 목록 개수 보기"
+      operationId: "notice list count"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - name: "notice_code"
+          in: "query"
+          description: "notice list"
+          required: false
+          type: "string"
+
+        - name: "keyword"
+          in: "query"
+          description: "검색어"
+          required: false
+          type: "string"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/write:
+    post:
+      tags:
+        - "notice"
+      summary: "write notice"
+      description: "write notice"
+      operationId: "write notice"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "write notice"
+          required: true
+          schema:
+            $ref: "#/definitions/notice_write"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/update:
+    patch:
+      tags:
+        - "notice"
+      summary: "Update notice"
+      description: "Update notice"
+      operationId: "updatenotice"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Update notice"
+          required: true
+          schema:
+            $ref: "#/definitions/notice_update"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/comment/write:
+    post:
+      tags:
+        - "notice_comment"
+      summary: "write notice_comment"
+      description: "write notice_comment"
+      operationId: "write notice_comment"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "write notice_comment"
+          required: true
+          schema:
+            $ref: "#/definitions/notice_comment_write"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/comment/update:
+    patch:
+      tags:
+        - "notice_comment"
+      summary: "Update notice_comment"
+      description: "Update notice_comment"
+      operationId: "Update notice_comment"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Update notice_comment"
+          required: true
+          schema:
+            $ref: "#/definitions/notice_comment_update"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/comment/delete/{no}:
+    delete:
+      tags:
+        - "notice_comment"
+      summary: "Delete by notice_comment"
+      description: "For valid response try integer IDs with positive integer value.         Negative or non-integer values will generate API errors"
+      operationId: "deletenotice"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "no"
+          description: "no of the notice that needs to be deleted"
+          required: true
+          type: "integer"
+      responses:
+        default:
+          description: "successful operation"
+
+  /notice/comment/list:
+    get:
+      tags:
+        - "notice_comment"
+      summary: "list"
+      description: "댓글 목록 보기"
+      operationId: "notice comment list"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - name: "notice_no"
+          in: "query"
+          description: "notice comment list"
           required: false
           type: "integer"
       responses:
@@ -244,58 +249,49 @@ securityDefinitions:
     in: "header"
 
 definitions:
-  community:
+  notice_update:
     type: "object"
     properties:
-      community_title:
-        type: "string"
-      community_author:
-        type: "string"
-      community_content:
-        type: "string"
-      community_code:
-        type: "string"
-      community_user_id:
-        type: "string"
-    xml:
-      name: "community"
-  community_search:
-    type: "object"
-    properties:
-      community_title:
-        type: "string"
-      community_author:
-        type: "string"
-    xml:
-      name: "community_search"
-  community_update:
-    type: "object"
-    properties:
-      community_title:
-        type: "string"
-      community_content:
-        type: "string"
-      community_no:
+      notice_no:
         type: "integer"
-        format: "int64"
+      notice_title:
+        type: "string"
+      notice_content:
+        type: "string"
     xml:
-      name: "community_update"
+      name: "notice_update"
 
-  community_comment_write:
+  notice_write:
+    type: "object"
+    properties:
+      notice_title:
+        type: "string"
+      notice_author:
+        type: "string"
+      notice_content:
+        type: "string"
+      notice_code:
+        type: "string"
+      notice_user_id:
+        type: "string"
+    xml:
+      name: "notice_write"
+
+  notice_comment_write:
     type: "object"
     properties:
       comment_user_nickName:
         type: "string"
-      community_no:
+      notice_no:
         type: "integer"
       comment_text:
         type: "string"
       comment_user_id:
         type: "string"
     xml:
-      name: "community_comment_write"
+      name: "notice_comment_write"
 
-  community_comment_update:
+  notice_comment_update:
     type: "object"
     properties:
       comment_no:
@@ -303,7 +299,7 @@ definitions:
       comment_text:
         type: "string"
     xml:
-      name: "community_comment_update"
+      name: "notice_comment_update"
 
 externalDocs:
   description: "Find out more about Swagger"

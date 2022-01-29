@@ -17,8 +17,14 @@ var app = express.Router();
 
 // 글 목록 가져오기 (add 01.24 OYT)
 app.get("/list", async function (req, res) {
+  
+  const page_no = ((req.query.page_no - 1) * 10);
+
   var selectParams = {
     type: req.query.community_code,
+    keyword: req.query.keyword,
+    length: 10,
+    start : page_no
   };
   var selectQuery = mybatisMapper.getStatement(
     "COMMUNITY",
@@ -38,15 +44,19 @@ app.get("/list", async function (req, res) {
     return;
   }
 
+  // 글이 없는 경우
   if (data.length == 0) {
-    res.status(403).send({ msg: "작성된 글이 없습니다." });
+    res.json({
+      result: "success",
+      data: [{}],
+    });
     return;
   }
 
   // 글 목록 꺼내오기
   res.json({
     msg: "글 목록",
-    user: data.map((x) => {
+    data: data.map((x) => {
       return x;
     }),
   });
@@ -99,7 +109,7 @@ app.put("/update", async function (req, res) {
     title: req.body.community_title,
     content: req.body.community_content,
     no: req.body.community_no,
-    user_id: req.body.community_user_id,
+    // user_id: req.body.community_user_id,
   };
 
   var updateQuery = mybatisMapper.getStatement(
@@ -155,10 +165,10 @@ app.get("/detail/:community_no", async function (req, res) {
     return;
   }
 
-  // 글 목록 꺼내오기
+  // 글 내용 꺼내오기
   res.json({
     msg: data[0].community_no + "의 글 정보",
-    user: data.map((x) => {
+    data: data.map((x) => {
       return x;
     }),
   });
@@ -194,14 +204,15 @@ app.delete("/delete/:community_no", async function (req, res) {
   res.json({ success: "delete success" });
 }); // 글 삭제 end
 
-// 글 목록 검색(add 01.24 OYT)
-app.get("/search", async function (req, res) {
+// 커뮤니티 글 개수 add (01.26 OYT)
+app.get("/listcount", async function (req, res) {
   var selectParams = {
+    type: req.query.community_code,
     keyword: req.query.keyword,
   };
   var selectQuery = mybatisMapper.getStatement(
     "COMMUNITY",
-    "COMMUNITY.SELECT.search",
+    "COMMUNITY.SELECT.communitylistcount",
     selectParams,
     { language: "sql", indent: "  " }
   );
@@ -213,23 +224,28 @@ app.get("/search", async function (req, res) {
     });
     console.log("TCL: data", data);
   } catch (error) {
-    res.status(403).send({ msg: "글목록 불러오기에 실패하였습니다.", error: error });
+    res.status(403).send({ result: "fail", error: error });
     return;
   }
 
+  // 글이 없는 경우
   if (data.length == 0) {
-    res.status(403).send({ msg: "작성된 글이 없습니다." });
+    res.json({
+      result: "success",
+      data: [{list_cnt: 0}],
+    });
     return;
   }
 
-  // 글 목록 꺼내오기
+  // 글 개수 꺼내오기
   res.json({
-    msg: "글 목록",
-    user: data.map((x) => {
+    result: "success",
+    data: data.map((x) => {
       return x;
     }),
   });
-}); // 글 검색 end
+}); // 커뮤니티 글 개수 end
+
 
 // 커뮤니티 댓글 작성 add (01.25 OYT)
 app.post("/comment/write", async (req, res) => {
@@ -336,7 +352,7 @@ app.delete("/comment/delete/:no", async (req, res) => {
   res.json({ result: "success" });
 }); // 커뮤니티 댓글 삭제 end
 
-// 커뮤니티 댓글 전체 목록 add (01.25 hhs)
+// 커뮤니티 댓글 전체 목록 fix (01.28 OYT)
 app.get("/comment/list", async function (req, res) {
   var selectParams = {
     no: req.query.community_no,
@@ -360,17 +376,22 @@ app.get("/comment/list", async function (req, res) {
   }
 
   if (data.length == 0) {
-    res.status(403).send({ result: "fail" });
+    res.json({
+      result: "success",
+      data: data = {}
+    });
     return;
-  }
-
-  // 댓글 목록 꺼내오기
+  }else{
+      // 댓글 목록 꺼내오기
   res.json({
     result: "success",
-    user: data.map((x) => {
+    data: data.map((x) => {
       return x;
     }),
   });
+  }
+
+
 }); // 커뮤니티 댓글 전체 목록 end
 
 

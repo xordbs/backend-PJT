@@ -218,35 +218,67 @@ app.patch("/updateinfo", verifyToken, async (req, res) => {
 });
 // 회원 정보 수정 end
 
-// 회원탈퇴 add (01.19 csw)
-app.delete("/delete/:id", async (req, res) => {
-  if (!req.params || !req.params.id) {
+// 회원탈퇴 fix (01.27 OYT)
+app.delete("/delete", async (req, res) => {
+  if (!req.body || !req.body.user_id) {
     res.status(403).send({ msg: "잘못된 파라미터입니다." });
     return;
   }
-  var deleteParams = {
-    id: req.params.id,
+
+  var selectParams = {
+    id: req.body.user_id,
   };
 
-  var deleteQuery = mybatisMapper.getStatement(
+  let selectQuery = mybatisMapper.getStatement(
     "USER",
-    "AUTH.DELETE.USERDELETE",
-    deleteParams,
+    "AUTH.SELECT.userexist",
+    selectParams,
     { language: "sql", indent: "  " }
   );
-
+  console.log(selectQuery);
   let data = [];
   try {
-    data = await req.sequelize.query(deleteQuery, {
-      type: req.sequelize.QueryTypes.DELETE,
+    data = await req.sequelize.query(selectQuery, {
+      type: req.sequelize.QueryTypes.SELECT,
     });
-    console.log("user-delete success");
+    console.log("TCL: data", data);
   } catch (error) {
-    res.status(403).send({ result : "fail", error: error });
+    res.status(403).send({ msg: "존재하지 않는 유저입니다.", error: error });
     return;
   }
-  res.json({ result : "success" });
+
+
+  const result = await comparePassword(req.body.user_pw, data[0].user_pw);
+  var deleteParams = {
+    id: req.body.user_id,
+    pw: data[0].user_pw,
+  };
+  if (result) {
+
+    var deleteQuery = mybatisMapper.getStatement(
+      "USER",
+      "AUTH.DELETE.USERDELETE",
+      deleteParams,
+      { language: "sql", indent: "  " }
+    );
+
+    let data = [];
+    try {
+      data = await req.sequelize.query(deleteQuery, {
+        type: req.sequelize.QueryTypes.DELETE,
+      });
+      console.log("user-delete success");
+    } catch (error) {
+      res.status(403).send({ result : "fail", error: error });
+      return;
+    }
+    res.json({ result : "success" });
+
+  } else {
+    res.json({ result : "fail", error: "pw 일치하지 않음" });
+  }
 }); // 회원탈퇴 end
+
 
 // 비밀번호 수정(fix 01.21 OYT)
 app.patch("/updatepw", verifyToken, async (req, res) => {
@@ -375,9 +407,10 @@ app.post("/login", async (req, res) => {
         msg: "로그인 성공",
         status: "login",
         token,
-        id: data[0].user_id,
-        name: data[0].user_nickName,
-        type: data[0].user_code,
+        user_id: data[0].user_id,
+        user_nickName: data[0].user_nickName,
+        user_code: data[0].user_code,
+        code_name: data[0].code_name
       });
     } else {
       return res

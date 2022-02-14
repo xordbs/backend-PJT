@@ -3,6 +3,9 @@ var { hashPassword, comparePassword } = require("../utils/bcrypt");
 const jwt = require("jsonwebtoken");
 const envJson = require(`${__dirname}/../env/env.json`);
 const { verifyToken } = require("../utils/jwt");
+const nodemailer = require("nodemailer"); 
+const ejs = require('ejs');
+
 
 // DB 연동
 const path = require("path");
@@ -422,5 +425,114 @@ app.post("/login", async (req, res) => {
 
 //비밀번호 비교 end
 // 회원 로그인 end
+
+const emailAuthNum = new Object();
+
+//회원가입 시 email 인증 ( 2022.02.07 CSW)
+app.post("/regi-email", async (req, res) => {
+  if (!req.body || !req.body.user_email) {
+    res.status(403).send({ msg: "잘못된 파라미터입니다." });
+    return;
+  }
+  //console.log(req.body.user_email);
+  var selectParams = {
+    user_email: req.body.user_email,
+  };
+
+  let selectQuery = mybatisMapper.getStatement(
+    "USER",
+    "AUTH.SELECT.emailchk",
+    selectParams,
+    { language: "sql", indent: "  " }
+  );
+
+  let data = [];
+  try {
+    data = await req.sequelize.query(selectQuery, {
+      type: req.sequelize.QueryTypes.SELECT,
+    });
+    console.log("TCL: data", data);
+  } catch (error) {
+    res
+      .status(403)
+      .send({ msg: "이메일 확인 중 문제가 발생했습니다.", error: error });
+    return;
+  }
+  if (data.length == 0) {
+    let emailto = req.body.user_email;
+    let authNum = Math.random().toString().substr(2,6);
+    emailAuthNum.emailto = emailto;
+    emailAuthNum.authNum = authNum;
+
+    let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        //host: 'smtp.gmail.com',
+        port:465,
+        secure: true,
+        auth: {
+            user: envJson.NODEMAILER_USER,
+            pass: envJson.NODEMAILER_PASS,
+        },
+    });
+    const mailOptions = {
+        from: envJson.NODEMAILER_USER,
+        to: emailto,
+        subject: "회원가입을 위한 인증번호를 입력해주세요.",
+        html: `<div style="text-align: center;">
+        <h3>인증번호 입니다.</h3><br/>
+        <p>${authNum}</p></div>`
+          ,
+    };
+  
+    console.log(mailOptions);
+    transporter.sendMail(mailOptions, function (error, info) {
+        if(error){
+          console. log("nodemailer error: "+ error);
+        }else{
+          return res.status(200).json({
+            code: 200,
+            msg: "회원가입 이메일 인증번호 전송 성공",
+            status: "regi-email",
+            content: info.response
+          });
+        }
+        transporter.close();
+
+    });
+  }else{
+    return res.json({
+      code: 200,
+      result : "fail",
+      msg: "이미 존재하는 이메일 입니다."
+    });
+  }
+}); // 회원가입 시 email 인증 end
+
+// email 인증 확인 (add 02.10 OYT)
+app.get("/regi-email", async (req, res) => {
+  if (!req.query || !req.query.authNum) {
+    res.status(403).send({ msg: "잘못된 파라미터입니다." });
+    return;
+  }
+  try {
+    if(emailAuthNum.authNum == req.query.authNum && emailAuthNum.emailto == req.query.user_email){
+      return res.json({
+        code: 200,
+        result : "success",
+      });
+    }else{
+      return res.json({
+        code: 200,
+        result : "fail",
+      });
+    }
+  } catch (error) {
+    res.status(403).send({ result : "fail", error: error });
+    return;
+  }
+}); // email 인증 확인 end
+
+
+
 
 module.exports = app;

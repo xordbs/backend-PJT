@@ -4,28 +4,42 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="MYFARM">  
 
-  <select id="MYFARM.SELECT.myfarmdetail">
-  	/* 내 농장 상세보기 */
+<select id="MYFARM.SELECT.myfarmdetail">
+      /* 내 농장 상세보기 */
     SELECT  
-        *
-    FROM my_farm_t
-    WHERE farm_no = #{no}
+        my_farm_t.farm_no,
+        user_id,
+        serial_no,
+        farm_name,
+        farm_regidate,
+        farm_text,
+        file_path
+    FROM my_farm_t left outer join myfarm_image_t on my_farm_t.farm_no = myfarm_image_t.farm_no 
+    <WHERE>
+      <if test="no != undefined">my_farm_t.farm_no = #{no} and</if> 
+      user_id = #{id}
+    </WHERE>
+    order by my_farm_t.farm_no asc
     LIMIT 1
   </select>
 
   <select id="MYFARM.SELECT.myfarmlist">
     /* 내 농장 전체 목록 */ 
     SELECT  
-        farm_no,
+        my_farm_t.farm_no,
         user_id,
+        serial_no,
         farm_name,
-        farm_text
-    FROM my_farm_t
-    <where>
-    <if test="keyword != undefined"> and (farm_name like concat('%',#{keyword}, '%')
-    or farm_text like concat('%',#{keyword}, '%'))</if>
-    </where>
-    order by farm_no asc;
+        farm_regidate,
+        farm_text,
+        file_path
+    FROM my_farm_t left outer join myfarm_image_t on my_farm_t.farm_no = myfarm_image_t.farm_no 
+    <WHERE>
+      user_id = #{id}
+      <if test="keyword != undefined"> and (my_farm_t.farm_name like concat('%',#{keyword}, '%')
+        or my_farm_t.farm_text like concat('%',#{keyword}, '%'))</if>
+    </WHERE>
+    order by my_farm_t.farm_no asc
   </select>
 
   <update id = "MYFARM.UPDATE.myfarmupdate">
@@ -43,5 +57,88 @@
     From my_farm_t
     Where farm_no = #{no}
   </delete>
+
+  <select id="MYFARM.SELECT.image">
+  	/* 농장 이미지 검색 */
+    SELECT  
+        file_name
+    FROM myfarm_image_t
+    where farm_no = #{farm_no}
+  </select>
+
+   <insert id="MYFARM.INSERT.image">
+    INSERT INTO myfarm_image_t
+    (
+        farm_no,
+        file_name,
+        file_path,
+        file_type,
+        file_size,
+        file_date
+    )
+    VALUES
+    (
+        #{farm_no}, 
+        #{file_name},
+        #{file_path}, 
+        #{file_type},
+        #{file_size},
+        (SELECT DATE_ADD(NOW(), INTERVAL 9 HOUR))
+    )
+  </insert>
+
+  <delete id="MYFARM.DELETE.image">
+    /* 내 농장 이미지 삭제 */
+    Delete
+    From myfarm_image_t
+    Where farm_no = #{farm_no}
+  </delete>
+
+  <insert id="MYFARM.INSERT.live">
+     /* 내 농장 라이브 이미지 */
+    INSERT INTO live_image_t
+    (
+        farm_no
+    )
+    VALUES
+    (
+        #{farm_no}
+    )
+  </insert>
+
+    <select id="MYFARM.SELECT.live">
+  	/* 농장 라이브 이미지 */
+    SELECT  
+        file_name
+    FROM live_image_t
+    where farm_no = #{farm_no}
+  </select>
+
+  <delete id="MYFARM.DELETE.live">
+    /* 내 농장 이미지 삭제 */
+    Delete
+    From live_image_t
+    Where farm_no = #{farm_no}
+  </delete>
+
+  <insert id="MYFARM.INSERT.device">
+     /* 내 농장 기기 신청 */
+    INSERT INTO my_farm_device
+    (
+        user_id,
+        user_name,
+        user_address,
+        user_phone,
+        regi_date
+    )
+    VALUES
+    (
+        #{user_id},
+        #{user_name},
+        #{user_address},
+        #{user_phone},
+        (SELECT DATE_ADD(NOW(), INTERVAL 9 HOUR))
+    )
+  </insert>
 
 </mapper>
